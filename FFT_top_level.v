@@ -1,42 +1,38 @@
 `timescale 1ns / 1ps
-`include "fft1.v"
-`include "fft2.v"
-`include "fft3.v"
-`include "fft4.v"
-//`include "round_off.v"
+`include "FFT_stage_1.v"
+`include "FFT_stage_2.v"
+`include "FFT_stage_3.v"
+`include "FFT_stage_4.v"
 `include "complex_multiplier.v"
-`include "Twiddle_rom.v"
+`include "Trivial_rotor.v"
+`include "butterfly.v"
 module fft_16point #(
     parameter N = 16  // Base Input Bit Width
 )(
-    input  wire                 clk,
-    input  wire                 rst_n,
-    input  wire                 i_valid,
+    input  wire clk,
+    input  wire rst_n,
+    input  wire i_valid,
     input  wire signed [N-1:0]  i_data_re,
     input  wire signed [N-1:0]  i_data_im,
     
-    output wire                 o_valid,
-    // Final output grows by 4 bits total across 4 stages (16 -> 17 -> 18 -> 19 -> 20)
+    output wire o_valid,// Final output grows by 4 bits total across 4 stages (16 -> 17 -> 18 -> 19 -> 20)
     output wire signed [N+3:0]  o_data_re,  
     output wire signed [N+3:0]  o_data_im
 );
 
-    // =========================================================================
-    // Interconnect Wires
-    // =========================================================================
-    wire                 stage1_valid;
-    wire signed [N:0]    stage1_re, stage1_im;  // 17 bits
+    wire stage1_valid;
+    wire signed [N:0]    stage1_re, stage1_im;  
 
-    wire                 stage2_valid;
-    wire signed [N+1:0]  stage2_re, stage2_im;  // 18 bits
+    wire stage2_valid;
+    wire signed [N+1:0]  stage2_re, stage2_im; 
 
-    wire                 stage3_valid;
-    wire signed [N+2:0]  stage3_re, stage3_im;  // 19 bits
+    wire stage3_valid;
+    wire signed [N+2:0]  stage3_re, stage3_im;  
 
     // =========================================================================
     // Stage 1: 2-Point Core (L=1)
     // =========================================================================
-    fft_2point #(.N(N)) stage1_inst (
+    fft_stage1 #(.N(N)) stage1_inst (
         .clk(clk), .rst_n(rst_n),
         .i_valid(i_valid), .i_data_re(i_data_re), .i_data_im(i_data_im),
         .o_valid(stage1_valid), .o_data_re(stage1_re), .o_data_im(stage1_im)

@@ -3,7 +3,7 @@
 module trivial_rotator #(
     parameter N = 16  // Input data width
 )(
-    input  wire                 rot_sel,  // 0 = Multiply by 1, 1 = Multiply by -j
+    input  wire rot_sel,  // 0 = Multiply by 1, 1 = Multiply by -j
     input  wire signed [N-1:0]  i_data_re,
     input  wire signed [N-1:0]  i_data_im,
     
@@ -18,8 +18,6 @@ module trivial_rotator #(
             o_data_im = i_data_im;
         end else begin
             // Swap and Negate (Multiply by -j)
-            // Note: 2's complement negation is (~value + 1), which synthesis 
-            // tools will infer automatically using the '-' operator.
             o_data_re = i_data_im;
             o_data_im = -i_data_re; 
         end

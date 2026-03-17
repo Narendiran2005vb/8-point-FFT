@@ -1,0 +1,85 @@
+`timescale 1ns/1ps
+
+module fft_stage1 #(
+    parameter N = 16  // Input bit width
+)(
+    input  wire                 clk,
+    input  wire                 rst_n,
+    input  wire                 i_valid,
+    input  wire signed [N-1:0]  i_data_re,
+    input  wire signed [N-1:0]  i_data_im,
+    
+    output reg                  o_valid,
+    output reg  signed [N:0]    o_data_re,  // N+1 bits to accommodate bit growth
+    output reg  signed [N:0]    o_data_im
+);
+
+    // Control state: 0 = Fill (waiting for 2nd sample), 1 = Compute & Flush
+    reg sel; 
+    reg signed [N-1:0] input_delay_re, input_delay_im;
+    reg signed [N:0]   diff_store_re,  diff_store_im;
+    reg flush_pending;
+    // Wires from the instantiated Butterfly
+    wire signed [N:0] sum_re, sum_im;
+    wire signed [N:0] diff_re, diff_im;
+
+    butterfly #(
+        .N(N)
+    ) bfly_inst (
+        .A_re(input_delay_re),
+        .A_im(input_delay_im),
+        .B_re(i_data_re),
+        .B_im(i_data_im),
+        .Sum_re(sum_re),
+        .Sum_im(sum_im),
+        .Diff_re(diff_re),
+        .Diff_im(diff_im)
+    );
+
+    always @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+            sel            <= 1'b0;
+            flush_pending  <= 1'b0;
+            o_valid        <= 1'b0;
+            o_data_re      <= {(N+1){1'b0}};
+            o_data_im      <= {(N+1){1'b0}};
+            input_delay_re <= {N{1'b0}};
+            input_delay_im <= {N{1'b0}};
+            diff_store_re  <= {(N+1){1'b0}};
+            diff_store_im  <= {(N+1){1'b0}};
+        end else begin
+            
+            o_valid <= 1'b0; 
+
+            // 1. Output the stored difference from the previous computation
+            // (This handles the flush independently of the i_valid signal)
+            if (flush_pending) begin
+                o_data_re     <= diff_store_re;
+                o_data_im     <= diff_store_im;
+                o_valid       <= 1'b1;
+                flush_pending <= 1'b0; // Clear the flag after flushing
+            end
+
+            // 2. Handle incoming streaming data
+            if (i_valid) begin
+                sel <= ~sel;
+                
+                if (sel == 1'b0) begin
+                    // FILL PHASE: Store sample 0. 
+                    input_delay_re <= i_data_re;
+                    input_delay_im <= i_data_im;
+                    
+                end else begin
+                    // COMPUTE PHASE: Butterfly computes Sample 0 and Sample 1
+                    o_data_re <= sum_re;
+                    o_data_im <= sum_im;
+                    o_valid   <= 1'b1;
+                    diff_store_re <= diff_re;
+                    diff_store_im <= diff_im;
+                    flush_pending <= 1'b1; 
+                end
+            end
+        end
+    end
+
+endmodule

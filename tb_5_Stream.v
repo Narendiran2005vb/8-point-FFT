@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module tb_fft_16point_impulse;
+module tb_fft_16point;
 
     localparam N = 16;
 
@@ -40,10 +40,8 @@ module tb_fft_16point_impulse;
         bit_rev_idx[12] = 3;  bit_rev_idx[13] = 11;
         bit_rev_idx[14] = 7;  bit_rev_idx[15] = 15;
 
-
-        natural_input[0] = 16'sd1000; 
-        for (i = 1; i < 16; i = i + 1) begin
-            natural_input[i] = 16'sd0; 
+        for (i = 0; i < 16; i = i + 1) begin
+            natural_input[i] = 16'sd10; 
         end
 
         // Initialize
@@ -58,8 +56,8 @@ module tb_fft_16point_impulse;
         rst_n = 1;
         #15;
 
-
-        for (frame = 0; frame < 2; frame = frame + 1) begin
+        // STREAM 5 CONSECUTIVE FRAMES (5 x 16 = 80 clock cycles)
+        for (frame = 0; frame < 5; frame = frame + 1) begin
             for (i = 0; i < 16; i = i + 1) begin
                 @(posedge clk);
                 i_valid   = 1;
@@ -69,18 +67,15 @@ module tb_fft_16point_impulse;
             end
         end
 
-        for (i = 0; i < 16; i = i + 1) begin
-            @(posedge clk);
-            i_valid   = 1;
-            i_data_re = 16'sd0;
-            i_data_im = 16'sd0;
-        end
-
-        // Safely drop valid
+        // Stop valid stream and let the deep pipeline flush
         @(posedge clk);
         i_valid   = 0;
+        i_data_re = 16'sd0;
+        i_data_im = 16'sd0;
 
-        #200;
+        // Wait for pipeline to flush out the remaining data from the delay lines
+        #400;
+        
         $display("Simulation Complete.");
         $stop;
     end
@@ -88,8 +83,9 @@ module tb_fft_16point_impulse;
     // Monitor output
     always @(posedge clk) begin
         if (o_valid) begin
-            if (o_data_re > 900 && o_data_im == 0) begin
-                $display("--- NEW FRAME ---");
+            // X[0] is the large DC bin. We can roughly detect the start of a frame this way
+            if (o_data_re > 100) begin
+                $display("---------------- FRAME BOUNDARY ----------------");
             end
             $display("Time: %0t | VALID OUTPUT -> Real: %5d, Imag: %5d", 
                      $time, o_data_re, o_data_im);

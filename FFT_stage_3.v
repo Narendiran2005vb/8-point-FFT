@@ -16,11 +16,9 @@ module fft_stage3 #(
     output reg  signed [N:0]    o_data_im
 );
 
-    // =========================================================================
-    // 1. Control & State Signals
-    // =========================================================================
+
     reg [2:0] count;           // 3-bit counter for L=4
-    reg [2:0] flush_count;     // To track flushing when stream pauses
+    reg [2:0] flush_count;   
 
     wire is_compute = count[2];       // MSB controls Phase (0=Fill, 1=Compute)
     wire [1:0] twid_addr = count[1:0]; // Lower 2 bits control ROM Address
@@ -29,9 +27,6 @@ module fft_stage3 #(
     reg signed [N:0] delay_re [0:3];
     reg signed [N:0] delay_im [0:3];
 
-    // =========================================================================
-    // 2. Twiddle ROM (Hardcoded for N=8, Scaled by 128)
-    // =========================================================================
     reg signed [TWID_W-1:0] twid_re, twid_im;
     
     always @(*) begin
@@ -43,9 +38,7 @@ module fft_stage3 #(
         endcase
     end
 
-    // =========================================================================
-    // 3. Complex Multiplier & Truncator (Combinational)
-    // =========================================================================
+ 
     // Real = (Dr*Wr) - (Di*Wi)  |  Imag = (Dr*Wi) + (Di*Wr)
     wire signed [N+TWID_W-1:0] mult_re = (i_data_re * twid_re) - (i_data_im * twid_im);
     wire signed [N+TWID_W-1:0] mult_im = (i_data_re * twid_im) + (i_data_im * twid_re);
@@ -54,9 +47,6 @@ module fft_stage3 #(
     wire signed [N-1:0] trunc_re = mult_re[N + SHIFT_VAL - 1 : SHIFT_VAL];
     wire signed [N-1:0] trunc_im = mult_im[N + SHIFT_VAL - 1 : SHIFT_VAL];
 
-    // =========================================================================
-    // 4. The Butterfly
-    // =========================================================================
     wire signed [N:0] sum_re, sum_im;
     wire signed [N:0] diff_re, diff_im;
 
@@ -73,9 +63,6 @@ module fft_stage3 #(
         .Diff_im(diff_im)
     );
 
-    // =========================================================================
-    // 5. Shift Register & Routing Logic
-    // =========================================================================
     integer i;
     always @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
@@ -83,12 +70,13 @@ module fft_stage3 #(
             flush_count <= 3'b000;
             o_valid     <= 1'b0;
             o_data_re   <= 0; o_data_im <= 0;
-            for(i=0; i<4; i=i+1) begin
-                delay_re[i] <= 0; delay_im[i] <= 0;
-            end
+            delay_re[0] <= 0; delay_im[0] <= 0;
+            delay_re[1] <= 0; delay_im[1] <= 0;
+            delay_re[2] <= 0; delay_im[2] <= 0;
+            delay_re[3] <= 0; delay_im[3] <= 0;
         end else begin
             
-            o_valid <= 1'b0; // Default clear
+            o_valid <= 1'b0; 
 
             // --- Flush Logic ---
             if (!i_valid && flush_count > 0) begin
@@ -115,7 +103,6 @@ module fft_stage3 #(
 
                 if (!is_compute) begin
                     // FILL PHASE: Store truncated multiplier output in delay line
-                    // (Sign-extended to N+1 bits)
                     delay_re[0] <= {i_data_re[N-1], i_data_re}; 
                     delay_im[0] <= {i_data_im[N-1], i_data_im};
 
