@@ -57,7 +57,7 @@ module fft_stage2 #(
         end else begin
             
             o_valid <= 1'b0;
-            // --- 1. Flush Logic (When stream pauses) ---
+            // 1. Flush Logic (When stream pauses)
             if (!i_valid && flush_count > 0) begin
                 o_data_re   <= delay_re[1];
                 o_data_im   <= delay_im[1];
@@ -69,7 +69,7 @@ module fft_stage2 #(
                 flush_count <= flush_count - 1;
             end
 
-            // --- 2. Standard Streaming Logic ---
+            // 2. Standard Streaming Logic
             if (i_valid) begin
                 count <= count + 1;
 

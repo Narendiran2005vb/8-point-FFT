@@ -1,6 +1,6 @@
 # 8-Point Pipelined Radix-2 DIT FFT Hardware Accelerator
 
-![FFT Architecture Placeholder](docs/images/architecture_diagram.png)
+![FFT Architecture Placeholder](docs/Schematic.jpeg)
 *(Replace with a block diagram of your 3-stage SDF pipeline)*
 
 ## Overview
@@ -23,10 +23,10 @@ Designed for real-time Digital Signal Processing (DSP) applications, this core f
 ## Simulation & Verification
 Verified using Icarus Verilog (`iverilog`). The testbench feeds an impulse signal and checks against the mathematical expected DC frequency bins, accurately modeling fixed-point quantization noise.
 
-![Simulation Waveform Placeholder](docs/images/simulation_waveform.png)
+![Simulation Waveform Placeholder](docs/Waveform.jpeg)
 *(Replace with a screenshot of your GTKWave or Vivado simulation showing the sequential valid outputs)*
 
-## ASIC Synthesis & Physical Design (Cadence)
+<!-- ## ASIC Synthesis & Physical Design (Cadence)
 This design was synthesized using **Cadence Genus** and taken through physical implementation using **Cadence Innovus**.
 
 ### Logical Synthesis Results (Genus)
@@ -40,7 +40,7 @@ This design was synthesized using **Cadence Genus** and taken through physical i
 *(Replace with a screenshot of your routed design from Innovus)*
 * **Core Utilization:** [e.g., 70%]
 * **Setup/Hold Slack:** [Insert Slack] ns
-* **Critical Path:** [Briefly describe the critical path, e.g., Stage 3 Complex Multiplier]
+* **Critical Path:** [Briefly describe the critical path, e.g., Stage 3 Complex Multiplier] -->
 
 ## How to Run the RTL Simulation
 ```bash
@@ -49,3 +49,18 @@ iverilog -o mydesign tb_fft_8point.v fft_8point.v fft_stage3.v fft_stage2.v fft_
 
 # Run the simulation
 vvp .\mydesign
+
+---
+
+# Author
+
+**Naren**
+ECE Student
+Interest Areas:
+
+* Processor Architecture
+* Digital Design
+* Radar Systems
+* FPGA and SDR Systems
+
+---
